@@ -1,0 +1,28 @@
+name: rag-platform
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.11
+  - pip
+  # Install spacy via conda to avoid typer conflicts with fastapi
+  - spacy
+  - numpy
+  - pandas
+  - pip:
+      - fastapi
+      - uvicorn
+      - python-multipart
+      - pydantic
+      - pydantic-settings
+      - boto3
+      - pinecone-client
+      - sentence-transformers
+      - rank-bm25
+      - pypdf
+      - langchain
+      - langchain-community
+      - ragas
+      - python-dotenv
+      - httpx
+      - prometheus-client
