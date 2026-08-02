@@ -136,6 +136,9 @@ cd manufacturing-rag-platform
 conda env create -f environment.yml
 conda activate rag-platform
 
+If using Git Bash activate with:
+source activate rag-platform
+
 # Download spaCy model
 python -m spacy download en_core_web_sm
 ```
