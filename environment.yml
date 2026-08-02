@@ -16,7 +16,7 @@ dependencies:
       - pydantic
       - pydantic-settings
       - boto3
-      - pinecone-client
+      - pinecone
       - sentence-transformers
       - rank-bm25
       - pypdf
