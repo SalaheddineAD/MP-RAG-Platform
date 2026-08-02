@@ -15,7 +15,8 @@ from app.retrieval.reranker import Reranker
 from app.generation.bedrock_client import BedrockGenerator
 from app.generation.guardrails import Guardrails
 from app.monitoring.cost_tracker import CostTracker, QueryMetrics
-
+from app.monitoring.circuit_breaker import bedrock_breaker
+    
 
 # Global state (in production, use dependency injection / Redis)
 search_engine = None
@@ -88,6 +89,18 @@ async def query(
     use_rerank: bool = True
 ):
     """Query the manufacturing knowledge base."""
+    if not cost_tracker.check_budget():
+        raise HTTPException(
+            status_code=429,
+            detail=f"Daily budget of ${CostTracker.DAILY_BUDGET_USD} exceeded. Try again tomorrow."
+        )
+    
+    # Rate limit check
+    if not bedrock_breaker.can_call():
+        raise HTTPException(
+            status_code=429,
+            detail=f"Rate limit exceeded. Try again in {bedrock_breaker.wait_time():.0f}s"
+        )
     total_start = time.time()
     settings = get_settings()
     
