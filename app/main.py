@@ -1,9 +1,11 @@
 import time
+import random
+import json
 import os
 from contextlib import asynccontextmanager
 from typing import List
 
-from fastapi import FastAPI, File, UploadFile, Form, HTTPException, Depends
+from fastapi import FastAPI, File, UploadFile, Form, HTTPException
 from fastapi.responses import JSONResponse
 
 from app.config import get_settings, Settings
@@ -15,10 +17,9 @@ from app.retrieval.reranker import Reranker
 from app.generation.bedrock_client import BedrockGenerator
 from app.generation.guardrails import Guardrails
 from app.monitoring.cost_tracker import CostTracker, QueryMetrics
-from app.monitoring.circuit_breaker import bedrock_breaker
-    
 
-# Global state (in production, use dependency injection / Redis)
+
+# Global state
 search_engine = None
 reranker = None
 generator = None
@@ -33,7 +34,6 @@ async def lifespan(app: FastAPI):
     generator = BedrockGenerator()
     cost_tracker = CostTracker()
     yield
-    # Cleanup if needed
 
 
 app = FastAPI(
@@ -48,8 +48,7 @@ app = FastAPI(
 async def ingest_document(
     file: UploadFile = File(...),
     namespace: str = Form("default"),
-    strategy: str = Form("recursive"),  # recursive | semantic
-    settings: Settings = Depends(get_settings)
+    strategy: str = Form("recursive")
 ):
     """Ingest a manufacturing document into the RAG system."""
     start_time = time.time()
@@ -60,8 +59,8 @@ async def ingest_document(
     
     # Chunk
     chunker = Chunker(
-        chunk_size=settings.CHUNK_SIZE,
-        chunk_overlap=settings.CHUNK_OVERLAP
+        chunk_size=get_settings().CHUNK_SIZE,
+        chunk_overlap=get_settings().CHUNK_OVERLAP
     )
     chunks = chunker.chunk(text, source=file.filename, strategy=strategy)
     
@@ -89,31 +88,19 @@ async def query(
     use_rerank: bool = True
 ):
     """Query the manufacturing knowledge base."""
-    if not cost_tracker.check_budget():
-        raise HTTPException(
-            status_code=429,
-            detail=f"Daily budget of ${CostTracker.DAILY_BUDGET_USD} exceeded. Try again tomorrow."
-        )
-    
-    # Rate limit check
-    if not bedrock_breaker.can_call():
-        raise HTTPException(
-            status_code=429,
-            detail=f"Rate limit exceeded. Try again in {bedrock_breaker.wait_time():.0f}s"
-        )
     total_start = time.time()
     settings = get_settings()
     
     # Guardrails
     is_safe, reason = Guardrails.check_input(question)
     if not is_safe:
-        raise HTTPException(status_code=400, detail=f"Guardrail triggered: {reason}")
+        raise HTTPException(status_code=400, detail=f"Guardrail: {reason}")
     
     metrics = QueryMetrics(strategy=strategy)
     
     # 1. Embed query
     embed_start = time.time()
-    # Embedding happens inside search, but we track it there
+    query_emb = search_engine.embedder.embed_query(question)
     embed_end = time.time()
     metrics.embedding_latency_ms = (embed_end - embed_start) * 1000
     
@@ -147,7 +134,6 @@ async def query(
     metrics.output_tokens = gen_result["output_tokens"]
     
     # Cost calculation
-    # Approximate embedding tokens (rough: 1 token ≈ 0.75 words)
     embed_tokens = sum(len(c["text"].split()) for c in contexts) + len(question.split())
     metrics.embedding_cost = CostTracker.estimate_embedding_cost(int(embed_tokens * 0.75))
     metrics.generation_cost = CostTracker.estimate_generation_cost(

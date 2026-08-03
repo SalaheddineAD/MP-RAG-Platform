@@ -3,6 +3,7 @@ import time
 import random
 import boto3
 from typing import List
+from botocore.config import Config
 from botocore.exceptions import ClientError
 from app.config import get_settings
 
@@ -15,7 +16,7 @@ class BedrockEmbedder:
         self.client = boto3.client(
             "bedrock-runtime", 
             region_name=self.settings.AWS_REGION,
-            config=boto3.config.Config(
+            config=Config(
                 retries={"max_attempts": 10, "mode": "adaptive"}
             )
         )

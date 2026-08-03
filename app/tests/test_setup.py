@@ -13,31 +13,38 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 import boto3
+import time
 import json
 from pinecone import Pinecone
 from app.config import get_settings
 
 settings = get_settings()
 
-# Test Bedrock
+
+# Try v1
 try:
-    bedrock = boto3.client("bedrock-runtime", region_name=settings.AWS_REGION)
-    response = bedrock.invoke_model(
-        modelId="amazon.titan-embed-text-v2:0",
-        body=json.dumps({"inputText": "test"}),
+    response = client.invoke_model(
+        modelId="amazon.titan-embed-text-v1",
+        body=json.dumps({"inputText": "hello world"}),
         accept="application/json",
-        contentType="application/json",
+        contentType="application/json"
     )
     result = json.loads(response["body"].read())
-    print(f"✓ Bedrock works! Embedding dim: {len(result['embedding'])}")
+    print(f"✓ Titan v1 works! Dim: {len(result['embedding'])}")
 except Exception as e:
-    print(f"✗ Bedrock failed: {e}")
+    print(f"✗ Titan v1 failed: {e}")
 
-# Test Pinecone
+time.sleep(2)
+
+# Try v2 again
 try:
-    pc = Pinecone(api_key=settings.PINECONE_API_KEY)
-    index = pc.Index(settings.PINECONE_INDEX_NAME)
-    stats = index.describe_index_stats()
-    print(f"✓ Pinecone connected! Vectors: {stats.total_vector_count}")
+    response = client.invoke_model(
+        modelId="amazon.titan-embed-text-v2:0",
+        body=json.dumps({"inputText": "hello world"}),
+        accept="application/json",
+        contentType="application/json"
+    )
+    result = json.loads(response["body"].read())
+    print(f"✓ Titan v2 works! Dim: {len(result['embedding'])}")
 except Exception as e:
-    print(f"✗ Pinecone failed: {e}")
+    print(f"✗ Titan v2 failed: {e}")
