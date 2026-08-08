@@ -8,13 +8,12 @@ from typing import List
 from fastapi import FastAPI, File, UploadFile, Form, HTTPException
 from fastapi.responses import JSONResponse
 
-from app.config import get_settings, Settings
+from app.config import get_settings
 from app.ingestion.loader import DocumentLoader
 from app.ingestion.chunker import Chunker
-from app.ingestion.embedder import BedrockEmbedder
 from app.retrieval.hybrid_search import HybridSearch
 from app.retrieval.reranker import Reranker
-from app.generation.bedrock_client import BedrockGenerator
+from app.generation.openai_client import OpenAIGenerator
 from app.generation.guardrails import Guardrails
 from app.monitoring.cost_tracker import CostTracker, QueryMetrics
 
@@ -31,7 +30,7 @@ async def lifespan(app: FastAPI):
     global search_engine, reranker, generator, cost_tracker
     search_engine = HybridSearch()
     reranker = Reranker()
-    generator = BedrockGenerator()
+    generator = OpenAIGenerator()
     cost_tracker = CostTracker()
     yield
 

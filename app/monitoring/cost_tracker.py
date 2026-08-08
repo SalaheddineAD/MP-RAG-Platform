@@ -28,9 +28,10 @@ class QueryMetrics:
 class CostTracker:
     """Track per-query costs with daily budgets."""
     
-    EMBED_COST_PER_1K = 0.0001
-    CLAUDE_INPUT_PER_1K = 0.003
-    CLAUDE_OUTPUT_PER_1K = 0.015
+    # OpenAI text-embedding-3-small / gpt-4o-mini (USD per 1K tokens)
+    EMBED_COST_PER_1K = 0.00002
+    GPT_INPUT_PER_1K = 0.00015
+    GPT_OUTPUT_PER_1K = 0.0006
     
     # Hard daily budget
     DAILY_BUDGET_USD = 5.0  # $5/day max
@@ -104,5 +105,5 @@ class CostTracker:
     
     @classmethod
     def estimate_generation_cost(cls, input_tokens: int, output_tokens: int) -> float:
-        return (input_tokens / 1000) * cls.CLAUDE_INPUT_PER_1K + \
-               (output_tokens / 1000) * cls.CLAUDE_OUTPUT_PER_1K
+        return (input_tokens / 1000) * cls.GPT_INPUT_PER_1K + \
+               (output_tokens / 1000) * cls.GPT_OUTPUT_PER_1K
