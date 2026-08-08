@@ -3,7 +3,7 @@ import numpy as np
 from pinecone import Pinecone
 from rank_bm25 import BM25Okapi
 from app.config import get_settings
-from app.ingestion.embedder import BedrockEmbedder
+from app.ingestion.embedder import OpenAIEmbedder
 
 
 class HybridSearch:
@@ -13,7 +13,7 @@ class HybridSearch:
         self.settings = get_settings()
         self.pc = Pinecone(api_key=self.settings.PINECONE_API_KEY)
         self.index = self.pc.Index(self.settings.PINECONE_INDEX_NAME)
-        self.embedder = BedrockEmbedder()  # Initialize embedder here
+        self.embedder = OpenAIEmbedder()
         
         self.bm25 = None
         self.corpus = []

@@ -12,39 +12,39 @@ ROOT = Path(__file__).resolve().parents[2]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-import boto3
-import time
-import json
+from openai import OpenAI
 from pinecone import Pinecone
 from app.config import get_settings
 
 settings = get_settings()
+client = OpenAI(api_key=settings.OPENAI_API_KEY)
 
-
-# Try v1
+# Test OpenAI embeddings
 try:
-    response = client.invoke_model(
-        modelId="amazon.titan-embed-text-v1",
-        body=json.dumps({"inputText": "hello world"}),
-        accept="application/json",
-        contentType="application/json"
+    response = client.embeddings.create(
+        model="text-embedding-3-small",
+        input="test",
     )
-    result = json.loads(response["body"].read())
-    print(f"✓ Titan v1 works! Dim: {len(result['embedding'])}")
+    print(f"✓ OpenAI embeddings work! Dim: {len(response.data[0].embedding)}")
 except Exception as e:
-    print(f"✗ Titan v1 failed: {e}")
+    print(f"✗ OpenAI embeddings failed: {e}")
 
-time.sleep(2)
-
-# Try v2 again
+# Test OpenAI chat
 try:
-    response = client.invoke_model(
-        modelId="amazon.titan-embed-text-v2:0",
-        body=json.dumps({"inputText": "hello world"}),
-        accept="application/json",
-        contentType="application/json"
+    response = client.chat.completions.create(
+        model="gpt-4o-mini",
+        messages=[{"role": "user", "content": "Say ok"}],
+        max_tokens=5,
     )
-    result = json.loads(response["body"].read())
-    print(f"✓ Titan v2 works! Dim: {len(result['embedding'])}")
+    print(f"✓ OpenAI chat works! Reply: {response.choices[0].message.content}")
 except Exception as e:
-    print(f"✗ Titan v2 failed: {e}")
+    print(f"✗ OpenAI chat failed: {e}")
+
+# Test Pinecone
+try:
+    pc = Pinecone(api_key=settings.PINECONE_API_KEY)
+    index = pc.Index(settings.PINECONE_INDEX_NAME)
+    stats = index.describe_index_stats()
+    print(f"✓ Pinecone connected! Vectors: {stats.total_vector_count}")
+except Exception as e:
+    print(f"✗ Pinecone failed: {e}")
