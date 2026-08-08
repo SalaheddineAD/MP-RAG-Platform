@@ -1,6 +1,6 @@
 from typing import List, Literal
 import spacy
-from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain_text_splitters import RecursiveCharacterTextSplitter
 
 
 class Chunker:
