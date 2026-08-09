@@ -12,7 +12,7 @@ from app.config import get_settings
 from app.ingestion.loader import DocumentLoader
 from app.ingestion.chunker import Chunker
 from app.retrieval.hybrid_search import HybridSearch
-from app.retrieval.reranker import Reranker
+from app.retrieval.reranker import get_reranker
 from app.generation.openai_client import OpenAIGenerator
 from app.generation.guardrails import Guardrails
 from app.monitoring.cost_tracker import CostTracker, QueryMetrics
@@ -29,7 +29,7 @@ cost_tracker = None
 async def lifespan(app: FastAPI):
     global search_engine, reranker, generator, cost_tracker
     search_engine = HybridSearch()
-    reranker = Reranker()
+    reranker = get_reranker()
     generator = OpenAIGenerator()
     cost_tracker = CostTracker()
     yield
@@ -103,12 +103,16 @@ async def query(
     embed_end = time.time()
     metrics.embedding_latency_ms = (embed_end - embed_start) * 1000
     
-    # 2. Retrieve
+    # 2. Retrieve, reusing the embedding computed above
     retrieve_start = time.time()
     if use_hybrid:
-        contexts = search_engine.hybrid_search(question, namespace, top_k=settings.TOP_K_DENSE)
+        contexts = search_engine.hybrid_search(
+            question, namespace, top_k=settings.TOP_K_DENSE, query_embedding=query_emb
+        )
     else:
-        contexts = search_engine.dense_search(question, namespace, top_k=settings.TOP_K_DENSE)
+        contexts = search_engine.dense_search(
+            question, namespace, top_k=settings.TOP_K_DENSE, query_embedding=query_emb
+        )
     retrieve_end = time.time()
     metrics.retrieval_latency_ms = (retrieve_end - retrieve_start) * 1000
     
@@ -176,17 +180,18 @@ async def query(
         }
     }
 
-# Add this endpoint to your app/main.py, inside the FastAPI app
-
 @app.post("/evaluate")
 async def evaluate(
     namespace: str = Form("default"),
-    golden_set: str = Form("data/golden_set/golden_set.jsonl")
+    golden_set: str = Form("data/golden_set/golden_set.jsonl"),
+    use_llm_judge: bool = Form(True),
+    save_results: bool = Form(True)
 ):
     """
     Run golden set evaluation against a namespace.
 
-    Returns aggregated metrics (faithfulness, relevance, precision, latency, cost)
+    Returns faithfulness (grounding in retrieved context), answer correctness
+    (agreement with the expected answer), relevance, precision, latency and cost,
     plus per-difficulty breakdowns and failed query analysis.
     """
     from app.evaluation.metrics import RAGEvaluator
@@ -194,22 +199,26 @@ async def evaluate(
     if not os.path.exists(golden_set):
         raise HTTPException(status_code=404, detail=f"Golden set not found: {golden_set}")
 
-    evaluator = RAGEvaluator(search_engine, generator)
-    results = evaluator.evaluate(golden_set, namespace, use_llm_judge=True)
-    saved_path = evaluator.save_eval_result(results)
+    evaluator = RAGEvaluator(search_engine, generator, reranker=reranker)
+    results = evaluator.evaluate(golden_set, namespace, use_llm_judge=use_llm_judge)
+    saved_path = evaluator.save_eval_result(results) if save_results else None
 
     return {
         "status": "success",
         "namespace": namespace,
         "golden_set": golden_set,
+        "saved_to": saved_path,
         "summary": {
             "total_evaluated": results["total_evaluated"],
             "avg_faithfulness": results["avg_faithfulness"],
+            "avg_answer_correctness": results["avg_answer_correctness"],
             "avg_answer_relevance": results["avg_answer_relevance"],
             "avg_context_precision": results["avg_context_precision"],
             "avg_latency_ms": results["avg_latency_ms"],
             "p95_latency_ms": results["p95_latency_ms"],
-            "avg_cost_per_query": results["avg_cost_per_query"]
+            "wall_clock_ms": results["wall_clock_ms"],
+            "avg_cost_per_query": results["avg_cost_per_query"],
+            "total_cost_usd": results["total_cost_usd"]
         },
         "by_difficulty": results["by_difficulty"],
         "failed_queries": results["failed_queries"],

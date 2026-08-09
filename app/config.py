@@ -19,6 +19,20 @@ class Settings(BaseSettings):
     TOP_K_DENSE: int = 20
     TOP_K_RERANK: int = 5
 
+    RERANK_MODEL: str = "cross-encoder/ms-marco-MiniLM-L-6-v2"
+    # Dense/sparse fusion weight: 1.0 is dense-only, 0.0 is BM25-only
+    HYBRID_ALPHA: float = 0.7
+    # BM25 needs the chunk text on disk to survive process restarts
+    BM25_CORPUS_DIR: str = "data/bm25"
+
+    # A chunk counts toward context precision above this relevance probability
+    CONTEXT_RELEVANCE_THRESHOLD: float = 0.5
+    # A golden-set question is reported as failing below these scores
+    EVAL_FAITHFULNESS_THRESHOLD: float = 0.7
+    EVAL_CORRECTNESS_THRESHOLD: float = 0.7
+    # Golden-set questions evaluated in parallel; each is I/O-bound on OpenAI/Pinecone
+    EVAL_CONCURRENCY: int = 4
+
     CHUNK_STRATEGY: str = "recursive"
     MAX_COST_PER_QUERY: float = 0.01
 
