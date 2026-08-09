@@ -1,0 +1,124 @@
+@import "tailwindcss";
+
+:root {
+  --bg: #f3f5f7;
+  --bg-elevated: #ffffff;
+  --ink: #15202b;
+  --ink-muted: #5a6a78;
+  --line: #d5dde5;
+  --accent: #0f766e;
+  --accent-soft: #d9f3ef;
+  --accent-strong: #0b5f59;
+  --warn: #b45309;
+  --bad: #b91c1c;
+  --good: #047857;
+  --grid: rgba(21, 32, 43, 0.045);
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-bg-elevated: var(--bg-elevated);
+  --color-ink: var(--ink);
+  --color-ink-muted: var(--ink-muted);
+  --color-line: var(--line);
+  --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-soft);
+  --color-accent-strong: var(--accent-strong);
+  --color-warn: var(--warn);
+  --color-bad: var(--bad);
+  --color-good: var(--good);
+  --font-sans: var(--font-display);
+  --font-mono: var(--font-mono);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-display), system-ui, sans-serif;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+::selection {
+  background: var(--accent-soft);
+  color: var(--ink);
+}
+
+.blueprint-grid {
+  background-color: var(--bg);
+  background-image:
+    linear-gradient(var(--grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+  background-size: 48px 48px;
+  background-position: -1px -1px;
+}
+
+.fade-up {
+  animation: fade-up 520ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.fade-up-delay {
+  animation: fade-up 620ms cubic-bezier(0.22, 1, 0.36, 1) 80ms both;
+}
+
+.fade-up-delay-2 {
+  animation: fade-up 700ms cubic-bezier(0.22, 1, 0.36, 1) 140ms both;
+}
+
+.pulse-ring {
+  animation: pulse-ring 1.4s ease-out infinite;
+}
+
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pulse-ring {
+  0% {
+    box-shadow: 0 0 0 0 rgba(15, 118, 110, 0.35);
+  }
+  100% {
+    box-shadow: 0 0 0 14px rgba(15, 118, 110, 0);
+  }
+}
+
+@keyframes draw-line {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+.nav-underline {
+  transform-origin: left;
+  animation: draw-line 380ms ease forwards;
+}
