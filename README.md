@@ -4,8 +4,8 @@ Production-grade Retrieval-Augmented Generation system for manufacturing documen
 
 ```
 ┌─────────────┐     ┌──────────────┐     ┌─────────────────┐
-│   Client    │────▶│  FastAPI     │────▶│  Input Guard    │
-│  (CLI/UI)   │◀────│   Gateway    │◀────│   Rails         │
+│  Next.js    │────▶│  FastAPI     │────▶│  Input Guard    │
+│   Console   │◀────│   Gateway    │◀────│   Rails         │
 └─────────────┘     └──────────────┘     └─────────────────┘
                             │
                             ▼
@@ -101,6 +101,7 @@ flowchart TD
 
 | Layer | Technology |
 |-------|-----------|
+| Frontend | Next.js 16 + TypeScript + Tailwind |
 | API Gateway | FastAPI + Uvicorn |
 | Embeddings | AWS Bedrock (Titan Embed v2) |
 | LLM | AWS Bedrock (Claude 3 Sonnet) |
@@ -173,14 +174,24 @@ uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 4
 ```
 
-### 4. Run with Docker
+### 4. Run the Frontend
+
+```bash
+cd frontend
+cp .env.example .env.local
+npm install
+npm run dev
+```
+
+Open `http://localhost:3000` for the console (Query, Ingest, Metrics, Evaluate). Next.js proxies `/api/*` to the FastAPI backend via `RAG_API_URL` (default `http://127.0.0.1:8000`).
+
+### 5. Run with Docker
 
 ```bash
 docker-compose up --build
 ```
 
-The API will be available at `http://localhost:8000`.
-
+The API will be available at `http://localhost:8000` and the frontend at `http://localhost:3000`.
 ---
 
 ## API Usage
@@ -292,6 +303,7 @@ manufacturing-rag-platform/
 │   │   └── metrics.py          # RAGAS evaluation pipeline
 │   └── monitoring/
 │       └── cost_tracker.py     # Per-query cost & latency telemetry
+├── frontend/                   # Next.js console (Query / Ingest / Metrics / Evaluate)
 ├── data/
 │   └── sample_docs/            # Sample manufacturing documents
 ├── notebooks/
