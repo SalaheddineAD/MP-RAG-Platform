@@ -14,10 +14,21 @@ class HybridSearch:
         self.pc = Pinecone(api_key=self.settings.PINECONE_API_KEY)
         self.index = self.pc.Index(self.settings.PINECONE_INDEX_NAME)
         self.embedder = OpenAIEmbedder()
+        self._verify_index_dimension()
         
         self.bm25 = None
         self.corpus = []
         self.chunk_metadata = []
+    
+    def _verify_index_dimension(self):
+        """Fail at startup rather than mid-ingest if embeddings won't fit the index."""
+        index_dim = self.index.describe_index_stats().dimension
+        if index_dim != self.embedder.dimensions:
+            raise ValueError(
+                f"Pinecone index '{self.settings.PINECONE_INDEX_NAME}' has dimension "
+                f"{index_dim}, but embeddings are {self.embedder.dimensions}. "
+                f"Set EMBEDDING_DIMENSIONS={index_dim} or recreate the index."
+            )
     
     def upsert_chunks(self, chunks: List[dict], namespace: str):
         texts = [c["text"] for c in chunks]

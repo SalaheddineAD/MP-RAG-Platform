@@ -6,6 +6,9 @@ class Settings(BaseSettings):
     OPENAI_API_KEY: str
     OPENAI_EMBEDDING_MODEL: str = "text-embedding-3-small"
     OPENAI_LLM_MODEL: str = "gpt-4o-mini"
+    OPENAI_JUDGE_MODEL: str = "gpt-4o-mini"
+    # Must match the dimension of the Pinecone index
+    EMBEDDING_DIMENSIONS: int = 1024
 
     PINECONE_API_KEY: str
     PINECONE_INDEX_NAME: str = "manufacturing-rag"

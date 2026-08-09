@@ -22,8 +22,8 @@ try:
     embedder = OpenAIEmbedder()
     vector = embedder.embed_query("torque specification for battery mount")
     print(f"✓ Embeddings work ({embedder.model})! Dim: {len(vector)}")
-    if len(vector) != 1536:
-        print(f"  ! Expected 1536 dims for the Pinecone index, got {len(vector)}")
+    if len(vector) != settings.EMBEDDING_DIMENSIONS:
+        print(f"  ! Expected {settings.EMBEDDING_DIMENSIONS} dims, got {len(vector)}")
 except Exception as e:
     print(f"✗ Embeddings failed: {type(e).__name__}: {e}")
 
@@ -45,3 +45,4 @@ try:
         print("  ! Answer did not cite the value from the provided context")
 except Exception as e:
     print(f"✗ Generation failed: {type(e).__name__}: {e}")
+    
