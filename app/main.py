@@ -176,6 +176,45 @@ async def query(
         }
     }
 
+# Add this endpoint to your app/main.py, inside the FastAPI app
+
+@app.post("/evaluate")
+async def evaluate(
+    namespace: str = Form("default"),
+    golden_set: str = Form("data/golden_set/golden_set.jsonl")
+):
+    """
+    Run golden set evaluation against a namespace.
+
+    Returns aggregated metrics (faithfulness, relevance, precision, latency, cost)
+    plus per-difficulty breakdowns and failed query analysis.
+    """
+    from app.evaluation.metrics import RAGEvaluator
+
+    if not os.path.exists(golden_set):
+        raise HTTPException(status_code=404, detail=f"Golden set not found: {golden_set}")
+
+    evaluator = RAGEvaluator(search_engine, generator)
+    results = evaluator.evaluate(golden_set, namespace, use_llm_judge=True)
+    saved_path = evaluator.save_eval_result(results)
+
+    return {
+        "status": "success",
+        "namespace": namespace,
+        "golden_set": golden_set,
+        "summary": {
+            "total_evaluated": results["total_evaluated"],
+            "avg_faithfulness": results["avg_faithfulness"],
+            "avg_answer_relevance": results["avg_answer_relevance"],
+            "avg_context_precision": results["avg_context_precision"],
+            "avg_latency_ms": results["avg_latency_ms"],
+            "p95_latency_ms": results["p95_latency_ms"],
+            "avg_cost_per_query": results["avg_cost_per_query"]
+        },
+        "by_difficulty": results["by_difficulty"],
+        "failed_queries": results["failed_queries"],
+        "total_failures": len(results["failed_queries"])
+    }
 
 @app.get("/metrics")
 async def get_metrics():

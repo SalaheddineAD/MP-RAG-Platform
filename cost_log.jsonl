@@ -1,0 +1,1 @@
+{"timestamp": 1786217924.1786902, "total_latency_ms": 5156.606435775757, "embedding_latency_ms": 1057.8804016113281, "retrieval_latency_ms": 909.9032878875732, "generation_latency_ms": 1864.7406101226807, "input_tokens": 971, "output_tokens": 82, "embedding_cost": 1.0740000000000002e-05, "generation_cost": 0.00019485, "strategy": "recursive"}
